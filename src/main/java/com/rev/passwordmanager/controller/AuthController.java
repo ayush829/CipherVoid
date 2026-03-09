@@ -85,9 +85,9 @@ public class AuthController {
      */
     @GetMapping("/passwords")
     public ResponseEntity<ApiResponse<?>> getPasswords(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "5") int size,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             Authentication authentication) {
 
         String username = authentication.getName();
@@ -105,7 +105,7 @@ public class AuthController {
      */
     @DeleteMapping("/delete-password/{id}")
     public ResponseEntity<ApiResponse<?>> deletePassword(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             Authentication authentication) {
 
         String username = authentication.getName();
@@ -149,7 +149,7 @@ public class AuthController {
      */
     @PutMapping("/toggle-favorite/{id}")
     public ResponseEntity<ApiResponse<?>> toggleFavorite(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             Authentication authentication) {
 
         String username = authentication.getName();
@@ -243,7 +243,7 @@ public class AuthController {
     }
 
     @GetMapping("/security-questions/{username}")
-    public ApiResponse<?> getSecurityQuestions(@PathVariable String username){
+    public ApiResponse<?> getSecurityQuestions(@PathVariable("username") String username){
 
         return userService.getSecurityQuestions(username);
 
@@ -266,7 +266,7 @@ public class AuthController {
     // ================= SEARCH PASSWORDS =================
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<?>> searchPasswords(
-            @RequestParam String keyword,
+            @RequestParam("keyword") String keyword,
             Authentication authentication) {
         
         String username = authentication.getName();
@@ -277,7 +277,7 @@ public class AuthController {
     // ================= FILTER BY CATEGORY =================
     @GetMapping("/category/{category}")
     public ResponseEntity<ApiResponse<?>> getPasswordsByCategory(
-            @PathVariable String category,
+            @PathVariable("category") String category,
             Authentication authentication) {
         
         String username = authentication.getName();
