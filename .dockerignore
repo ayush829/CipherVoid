@@ -1,9 +1,13 @@
 target/
-.mvn/
+*.iml
 .idea/
+.git/
+.gitignore
+Dockerfile
+.dockerignore
+HELP.md
 mvnw
 mvnw.cmd
-.git/
+.mvn/
 Frontend/
-README.md
-DEPLOY.md
+node_modules/
