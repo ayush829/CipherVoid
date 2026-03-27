@@ -9,6 +9,7 @@ import com.rev.passwordmanager.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; // Added for direct instantiation
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,8 +20,6 @@ import org.springframework.data.domain.Sort;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -54,6 +53,7 @@ public class UserService {
      * Why: Enforces uniqueness on username and email and securely hashes credentials
      * to prevent plain-text breaches.
      */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<?> registerUser(RegisterRequest request) {
 
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -129,6 +129,7 @@ public class UserService {
      * Why: Isolates private credentials per user and protects sensitive data using AES encryption
      * so that even a database leak doesn't reveal passwords.
      */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<?> addPassword(AddPasswordRequest request, String usernameFromToken) {
 
 
@@ -226,6 +227,36 @@ public class UserService {
                 ).toList();
 
         return new ApiResponse<>(true, "Search results", response);
+    }
+
+    /**
+     * Gets a single password entry for the edit screen.
+     * Why: Necessary for populating individual edit pages reliably.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ApiResponse<?> getPasswordById(Long id, String usernameFromToken) {
+        User user = userRepository.findByUsername(usernameFromToken).orElse(null);
+        if (user == null) {
+            return new ApiResponse<>(false, "User not found", null);
+        }
+
+        PasswordEntry entry = passwordEntryRepository.findById(id).orElse(null);
+        if (entry == null || !entry.getUser().getId().equals(user.getId())) {
+            return new ApiResponse<>(false, "Password entry not found", null);
+        }
+
+        PasswordResponse response = new PasswordResponse(
+                entry.getId(),
+                entry.getAccountName(),
+                entry.getWebsite(),
+                entry.getUsername(),
+                AESUtil.decrypt(entry.getEncryptedPassword()),
+                entry.getCategory(),
+                entry.getNotes(),
+                entry.getFavorite()
+        );
+
+        return new ApiResponse<>(true, "Password fetched successfully", response);
     }
 
     /**
@@ -521,7 +552,7 @@ public class UserService {
         }
 
         List<UserSecurityAnswer> answers =
-                userSecurityAnswerRepository.findByUser_Id(user.getId());
+                userSecurityAnswerRepository.findByUser_IdOrderByIdAsc(user.getId());
 
         List<SecurityQuestion> questions = answers.stream()
                 .map(UserSecurityAnswer::getSecurityQuestion)
@@ -536,6 +567,7 @@ public class UserService {
      * Why: A vital fallback mechanism to prevent users from permanently losing access
      * to their vault if they forget their master password.
      */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<?> recoverPassword(RecoverPasswordRequest request){
 
         User user = userRepository.findByUsername(request.getUsername())
@@ -545,8 +577,12 @@ public class UserService {
             return new ApiResponse<>(false,"User not found",null);
         }
 
+        if (request.getAnswers() == null || request.getAnswers().size() != 3) {
+            return new ApiResponse<>(false, "You must provide exactly 3 security answers.", null);
+        }
+
         List<UserSecurityAnswer> storedAnswers =
-                userSecurityAnswerRepository.findByUser_Id(user.getId());
+                userSecurityAnswerRepository.findByUser_IdOrderByIdAsc(user.getId());
 
         for(int i=0;i<storedAnswers.size();i++){
 
@@ -684,25 +720,93 @@ public class UserService {
         }
 
         try {
-            String json = AESUtil.decrypt(encryptedBackup);
+            String json = null;
+            String decrypted = AESUtil.decrypt(encryptedBackup);
+            if (!"[Decryption Failed]".equals(decrypted) && decrypted.trim().startsWith("[")) {
+                json = decrypted;
+            } else if (encryptedBackup.trim().startsWith("[")) {
+                json = encryptedBackup;
+            }
+
+            if (json == null) {
+                return new ApiResponse<>(false, "Failed to import vault. Invalid file format.", null);
+            }
+
             ObjectMapper mapper = new ObjectMapper();
             List<PasswordResponse> importedPasswords = mapper.readValue(json, new TypeReference<List<PasswordResponse>>(){});
             
+            int importedCount = 0;
+
             for (PasswordResponse p : importedPasswords) {
-                PasswordEntry entry = new PasswordEntry();
-                entry.setUser(user);
-                entry.setAccountName(p.getAccountName());
-                entry.setWebsite(p.getWebsite());
-                entry.setUsername(p.getUsername());
-                entry.setEncryptedPassword(AESUtil.encrypt(p.getPassword()));
-                entry.setCategory(p.getCategory());
-                entry.setNotes(p.getNotes());
-                entry.setFavorite(p.getFavorite() != null ? p.getFavorite() : false);
-                passwordEntryRepository.save(entry);
+                try {
+                    String account = p.getAccountName() != null ? p.getAccountName().trim() : "Unnamed Account";
+                    
+                    // Smart Normalization
+                    String web = p.getWebsite();
+                    if (web == null || web.trim().isEmpty() || web.equalsIgnoreCase("null") || web.equalsIgnoreCase("none")) {
+                        web = "none";
+                    } else {
+                        web = web.trim();
+                    }
+
+                    String userLogin = p.getUsername() != null ? p.getUsername().trim() : "none";
+                    String plainPassword = p.getPassword() != null ? p.getPassword() : "";
+
+                    // DESTRUCTIVE MERGE: Find and Remove existing match first
+                    // This is the absolute cure for duplicates.
+                    List<PasswordEntry> existing = passwordEntryRepository.findByUserId(user.getId());
+                    for (PasswordEntry entry : existing) {
+                        if (entry.getAccountName().equalsIgnoreCase(account) && 
+                            entry.getWebsite().equalsIgnoreCase(web) && 
+                            entry.getUsername().equalsIgnoreCase(userLogin)) {
+                            passwordEntryRepository.delete(entry);
+                        }
+                    }
+                    passwordEntryRepository.flush();
+
+                    // Now save the fresh one
+                    PasswordEntry entry = new PasswordEntry();
+                    entry.setUser(user);
+                    entry.setAccountName(account);
+                    entry.setWebsite(web);
+                    entry.setUsername(userLogin);
+                    entry.setEncryptedPassword(AESUtil.encrypt(plainPassword));
+                    entry.setCategory(p.getCategory() != null ? p.getCategory() : "General");
+                    entry.setNotes(p.getNotes() != null ? p.getNotes() : "");
+                    entry.setFavorite(p.getFavorite() != null ? p.getFavorite() : false);
+                    
+                    passwordEntryRepository.saveAndFlush(entry);
+                    importedCount++;
+                } catch (Exception e) {
+                    // Item failed, continue with others
+                }
             }
-            return new ApiResponse<>(true, "Vault imported successfully", null);
+            
+            String finalMsg = String.format("Vault Stabilized: %d records updated/added.", 
+                                            importedCount);
+            return new ApiResponse<>(true, finalMsg, null);
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Failed to import vault. Invalid backup file.", null);
+            return new ApiResponse<>(false, "Vault synchronization failed: " + e.getMessage(), null);
         }
+    }
+
+    /**
+     * Completely deletes the user account and all associated vault data.
+     * Why: Compliance with "Right to be Forgotten". Verifies master password before 
+     * irreversible destruction of data.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public ApiResponse<?> deleteAccount(String username, String rawPassword) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return new ApiResponse<>(false, "User not found", null);
+        }
+
+        if (!passwordEncoder.matches(rawPassword, user.getMasterPassword())) {
+            return new ApiResponse<>(false, "Invalid master password. Deletion aborted.", null);
+        }
+
+        userRepository.delete(user);
+        return new ApiResponse<>(true, "Account and all data permanently deleted.", null);
     }
 }

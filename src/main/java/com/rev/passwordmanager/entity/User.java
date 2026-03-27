@@ -40,6 +40,12 @@ public class User {
     @Column(name = "OTP_EXPIRY")
     private java.time.LocalDateTime otpExpiry;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<PasswordEntry> passwords = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<UserSecurityAnswer> securityAnswers = new java.util.ArrayList<>();
+
     // ================= GETTERS & SETTERS =================
 
     public Long getId() {

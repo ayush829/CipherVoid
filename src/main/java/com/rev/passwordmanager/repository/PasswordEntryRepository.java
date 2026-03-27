@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
-
 import java.util.List;
 
 public interface PasswordEntryRepository extends JpaRepository<PasswordEntry, Long> {
@@ -28,5 +27,13 @@ public interface PasswordEntryRepository extends JpaRepository<PasswordEntry, Lo
 """)
     List<PasswordEntry> searchPasswords(Long userId, String keyword);
 
+    @Query("""
+    SELECT COUNT(p) > 0 FROM PasswordEntry p
+    WHERE p.user.id = :userId
+    AND LOWER(TRIM(p.accountName)) = LOWER(TRIM(:accountName))
+    AND LOWER(TRIM(p.website)) = LOWER(TRIM(:website))
+    AND LOWER(TRIM(p.username)) = LOWER(TRIM(:username))
+""")
+    boolean existsByCredentials(Long userId, String accountName, String website, String username);
 
 }

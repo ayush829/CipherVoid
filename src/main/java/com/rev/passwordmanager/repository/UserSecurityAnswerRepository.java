@@ -12,5 +12,5 @@ public interface UserSecurityAnswerRepository
     Optional<UserSecurityAnswer>
     findByUser_IdAndSecurityQuestion_Id(Long userId, Long questionId);
 
-    List<UserSecurityAnswer> findByUser_Id(Long userId);
+    List<UserSecurityAnswer> findByUser_IdOrderByIdAsc(Long userId);
 }

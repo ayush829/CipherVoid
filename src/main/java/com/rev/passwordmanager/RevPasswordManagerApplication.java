@@ -14,7 +14,7 @@ public class RevPasswordManagerApplication {
 
 	public static void main(String[] args) {
 
-		log.info("Starting Password Manager Application...");
+		log.info("Starting CipherVoid Security System...");
 
 		SpringApplication.run(RevPasswordManagerApplication.class, args);
 

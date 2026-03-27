@@ -142,6 +142,28 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    // ================= GET PASSWORD BY ID =================
+    /**
+     * Gets a single password entry by ID.
+     * Why: Used by the Edit Password page to prepopulate data securely.
+     */
+    @GetMapping("/passwords/{id}")
+    public ResponseEntity<ApiResponse<?>> getPasswordById(
+            @PathVariable("id") Long id,
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
+        ApiResponse<?> response =
+                userService.getPasswordById(id, username);
+
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
     // ================= TOGGLE FAVORITE =================
     /**
      * Toggles the favorite status of a password entry.
@@ -250,10 +272,15 @@ public class AuthController {
     }
 
     @PostMapping("/recover-password")
-    public ApiResponse<?> recoverPassword(@RequestBody RecoverPasswordRequest request){
+    public ResponseEntity<ApiResponse<?>> recoverPassword(@RequestBody RecoverPasswordRequest request){
 
-        return userService.recoverPassword(request);
+        ApiResponse<?> response = userService.recoverPassword(request);
+        
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
+        }
 
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/toggle-2fa")
@@ -332,6 +359,27 @@ public class AuthController {
         if (!response.isSuccess()) {
             return ResponseEntity.badRequest().body(response);
         }
+        return ResponseEntity.ok(response);
+    }
+
+    // ================= DELETE ACCOUNT =================
+    /**
+     * Completely deletes the user account and all associated data.
+     * Why: Compliance with data privacy standards. Allows users to exercise their
+     * "Right to be Forgotten" after mandatory identity verification.
+     */
+    @DeleteMapping("/delete-account")
+    public ResponseEntity<ApiResponse<?>> deleteAccount(
+            @Valid @RequestBody DeleteAccountRequest request,
+            Authentication authentication) {
+
+        String username = authentication.getName();
+        ApiResponse<?> response = userService.deleteAccount(username, request.getMasterPassword());
+
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
+        }
+
         return ResponseEntity.ok(response);
     }
 }
