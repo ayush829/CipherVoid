@@ -1,0 +1,9 @@
+target/
+.mvn/
+.idea/
+mvnw
+mvnw.cmd
+.git/
+Frontend/
+README.md
+DEPLOY.md
