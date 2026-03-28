@@ -64,12 +64,6 @@
 		</dependency>
 
 
-		<dependency>
-			<groupId>com.oracle.database.jdbc</groupId>
-			<artifactId>ojdbc11</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-
 		<!-- PostgreSQL for Cloud Deployment -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
