@@ -19,7 +19,7 @@ Add these under the **Environment** tab in Render. I have updated the code to us
 | Key | Value |
 | :--- | :--- |
 | **`PORT`** | `8080` |
-| **`SPRING_DATASOURCE_URL`** | `jdbc:postgresql://db.aogmgakolrfwtenucqhs.supabase.co:6543/postgres?sslmode=require` |
+| **`SPRING_DATASOURCE_URL`** | `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require` |
 | **`SPRING_DATASOURCE_USERNAME`** | `postgres.aogmgakolrfwtenucqhs` |
 | **`SPRING_DATASOURCE_PASSWORD`** | `Ciphervoid@25` |
 
