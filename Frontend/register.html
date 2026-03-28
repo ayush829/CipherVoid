@@ -14,8 +14,9 @@
 <body class="d-flex align-items-center justify-content-center animate-fade-in py-5"
     style="min-height: 100vh; position: relative;">
 
-    <!-- Language Selector Dropdown -->
-    <div class="position-absolute top-0 end-0 p-3">
+    <!-- Theme Toggle & Language Selector -->
+    <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-2">
+        <button class="theme-toggle-btn m-0" onclick="toggleTheme()" title="Toggle Theme" style="width: 38px; height: 38px;"></button>
         <select id="langSelect" class="form-select bg-dark text-white border-secondary shadow-sm"
             onchange="changeLanguage(this.value)" style="width: auto; appearance: auto;">
             <option value="en">English</option>
