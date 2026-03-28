@@ -13,18 +13,19 @@ This project is now **Self-Contained**. The frontend is bundled inside the Java 
 4.  **Region:** `Frankfurt (EU West)` or your preferred.
 5.  **Plan:** `Free`.
 
-### **3. Environment Variables (CRITICAL)**
-Add these under the **Environment** tab in Render:
+### **3. Environment Variables (STANDARD NAMES)**
+Add these under the **Environment** tab in Render. I have updated the code to use these "magic" names which are more stable:
 
 | Key | Value |
 | :--- | :--- |
 | **`PORT`** | `8080` |
-| **`DB_URL`** | `jdbc:postgresql://<host>:5432/<db_name>` |
-| **`DB_USERNAME`** | `postgres` |
-| **`DB_PASSWORD`** | `<your-supabase-password>` |
-| **`DB_DRIVER`** | `org.postgresql.Driver` |
-| **`DB_DIALECT`** | `org.hibernate.dialect.PostgreSQLDialect` |
+| **`SPRING_DATASOURCE_URL`** | `jdbc:postgresql://db.aogmgakolrfwtenucqhs.supabase.co:6543/postgres?sslmode=require` |
+| **`SPRING_DATASOURCE_USERNAME`** | `postgres.aogmgakolrfwtenucqhs` |
+| **`SPRING_DATASOURCE_PASSWORD`** | `Ciphervoid@25` |
+
+> [!IMPORTANT]
+> **Why 6543?** Supabase recently moved to IPv6. Using port `6543` (Connection Pooler) ensures your app can connect from Render's network without "Network is unreachable" errors.
 
 ## 4. Deploy!
-- Once you click **Create Web Service**, Render will build your Docker image and start the app.
-- Open the **onrender.com** URL to see your vault live! ☯️✨
+- Once you click **Create Web Service**, Render will build your Docker image.
+- Since I removed all local defaults, there is now **zero chance** of the old Oracle settings interfering.
